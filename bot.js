@@ -16,9 +16,8 @@ let currentDay = "";
 client.on("messageCreate", (message) => {
   if (message.author.bot) return;
 
-  console.log("message", message.content);
+  const eruptleRegex = /Day (\d+) - .*\n.*\n.*🎯 Score: (\d+)/;
 
-  const eruptleRegex = /Day (\d+) - .*🎯 Score: (\d+)/;
   const match = message.content.match(eruptleRegex);
 
   if (match) {

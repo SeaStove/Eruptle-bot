@@ -13,17 +13,22 @@ const client = new Client({
 });
 
 let leaderboard = {};
-let currentDay = "";
+let currentPrompt = "";
 
-// Helper function to extract score information
+// Helper function to extract score information and prompt
 function parseEruptleMessage(message) {
-  const eruptleRegex = /Day (\d+) - .*\n.*\n.*🎯 Score: (\d+)/;
+  const eruptleRegex = /🤔\s*(.*?)\s*\n.*🎯\s*Score:\s*(\d+)/s;
   const match = message.match(eruptleRegex);
 
   if (match) {
-    const day = match[1];
+    let prompt = match[1].trim();
     const score = parseInt(match[2], 10);
-    return { day, score };
+
+    // Strip out "Day XX - " if present
+    const dayPattern = /^Day \d+ - /;
+    prompt = prompt.replace(dayPattern, "").trim();
+
+    return { prompt, score };
   }
   return null;
 }
@@ -36,7 +41,7 @@ async function updateLeaderboardFromRecentMessages(channel) {
     if (msg.author.bot) return;
 
     const parsedResult = parseEruptleMessage(msg.content);
-    if (parsedResult && parsedResult.day === currentDay) {
+    if (parsedResult && parsedResult.prompt === currentPrompt) {
       const { score } = parsedResult;
       const username = msg.author.username;
 
@@ -54,34 +59,39 @@ client.on("messageCreate", async (message) => {
 
   console.log(`Parsed result: ${JSON.stringify(parsedResult)}`);
   if (parsedResult) {
-    const { day, score } = parsedResult;
+    const { prompt, score } = parsedResult;
     const username = message.author.username;
 
-    // Reset leaderboard if the day has changed
-    if (day !== currentDay) {
-      currentDay = day;
+    // Reset leaderboard if the prompt has changed
+    if (prompt !== currentPrompt) {
+      currentPrompt = prompt;
       leaderboard = {};
     }
 
     // Update leaderboard with the current message
     leaderboard[username] = score;
 
-    // Check the last 100 messages and update leaderboard with any other scores for the current day
+    // Check the last 100 messages and update leaderboard with any other scores for the current prompt
     await updateLeaderboardFromRecentMessages(message.channel);
 
-    // Determine the leader
-    const leader = Object.entries(leaderboard).reduce((a, b) =>
-      b[1] > a[1] ? b : a
-    );
+    // Determine the leader(s)
+    const scores = Object.entries(leaderboard);
+    const maxScore = Math.max(...scores.map(([_, score]) => score));
+    const leaders = scores.filter(([_, score]) => score === maxScore);
+
+    let leaderboardMessage = `🏆 **Current Leaderboard (${currentPrompt}):**\n${scores
+      .map(([user, score]) => `${user}: ${score}`)
+      .join("\n")}`;
+
+    if (leaders.length > 1) {
+      const leaderNames = leaders.map(([user]) => user).join(", ");
+      leaderboardMessage += `\n\n🤝 **Tie:** ${leaderNames} with ${maxScore} points each`;
+    } else {
+      leaderboardMessage += `\n\n👑 **Top Score:** ${leaders[0][0]} with ${maxScore} points`;
+    }
 
     // Send updated leaderboard
-    message.channel.send(
-      `🏆 **Current Leaderboard (Day ${currentDay}):**\n${Object.entries(
-        leaderboard
-      )
-        .map(([user, score]) => `${user}: ${score}`)
-        .join("\n")}\n\n👑 **Top Score:** ${leader[0]} with ${leader[1]} points`
-    );
+    message.channel.send(leaderboardMessage);
   }
 });
 

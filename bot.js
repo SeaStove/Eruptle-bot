@@ -74,21 +74,24 @@ client.on("messageCreate", async (message) => {
     // Check the last 100 messages and update leaderboard with any other scores for the current prompt
     await updateLeaderboardFromRecentMessages(message.channel);
 
-    // Determine the leader(s)
-    const scores = Object.entries(leaderboard);
-    const maxScore = Math.max(...scores.map(([_, score]) => score));
-    const leaders = scores.filter(([_, score]) => score === maxScore);
+    // Sort the scores in descending order
+    const sortedScores = Object.entries(leaderboard).sort(
+      (a, b) => b[1] - a[1]
+    );
 
-    let leaderboardMessage = `🏆 **Current Leaderboard (${currentPrompt}):**\n${scores
-      .map(([user, score]) => `${user}: ${score}`)
-      .join("\n")}`;
+    // Find the highest score
+    const maxScore = sortedScores[0][1];
 
-    if (leaders.length > 1) {
-      const leaderNames = leaders.map(([user]) => user).join(", ");
-      leaderboardMessage += `\n\n🤝 **Tie:** ${leaderNames} with ${maxScore} points each`;
-    } else {
-      leaderboardMessage += `\n\n👑 **Top Score:** ${leaders[0][0]} with ${maxScore} points`;
-    }
+    // Build the leaderboard message
+    let leaderboardMessage = `🌋 "${currentPrompt}" Leaderboard\n`;
+
+    sortedScores.forEach(([user, score], index) => {
+      if (score === maxScore) {
+        leaderboardMessage += `🏆 ${user}: ${score}\n`;
+      } else {
+        leaderboardMessage += `${index + 1}. ${user}: ${score}\n`;
+      }
+    });
 
     // Send updated leaderboard
     message.channel.send(leaderboardMessage);

@@ -82,12 +82,17 @@ client.on("messageCreate", async (message) => {
     // Find the highest score
     const maxScore = sortedScores[0][1];
 
+    // Array of emojis for rankings 2 through 10
+    const rankEmojis = ["🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+
     // Build the leaderboard message
     let leaderboardMessage = `🌋 "${currentPrompt}" Leaderboard\n`;
 
     sortedScores.forEach(([user, score], index) => {
       if (score === maxScore) {
         leaderboardMessage += `🏆 ${user}: ${score}\n`;
+      } else if (index < rankEmojis.length) {
+        leaderboardMessage += `${rankEmojis[index]} ${user}: ${score}\n`;
       } else {
         leaderboardMessage += `${index + 1}. ${user}: ${score}\n`;
       }

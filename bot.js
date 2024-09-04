@@ -88,13 +88,24 @@ client.on("messageCreate", async (message) => {
     // Build the leaderboard message
     let leaderboardMessage = `🌋 "${currentPrompt}" Leaderboard\n`;
 
+    let currentRank = 1; // Track the current rank
+
     sortedScores.forEach(([user, score], index) => {
       if (score === maxScore) {
         leaderboardMessage += `🏆 ${user}: ${score}\n`;
-      } else if (index < rankEmojis.length) {
-        leaderboardMessage += `${rankEmojis[index]} ${user}: ${score}\n`;
       } else {
-        leaderboardMessage += `${index + 1}. ${user}: ${score}\n`;
+        // Increment rank only if the score is lower than the previous user's score
+        if (index > 0 && score < sortedScores[index - 1][1]) {
+          currentRank = index + 1;
+        }
+
+        if (currentRank - 1 < rankEmojis.length) {
+          leaderboardMessage += `${
+            rankEmojis[currentRank - 2]
+          } ${user}: ${score}\n`;
+        } else {
+          leaderboardMessage += `${currentRank}. ${user}: ${score}\n`;
+        }
       }
     });
 
